@@ -39,6 +39,26 @@ const apiLimiter = rateLimit({
 });
 app.use('/api', apiLimiter);
 
+// Root Landing Route
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    app: 'KV Digital Cinema API Server',
+    version: '1.0.0',
+    health: '/api/health',
+    endpoints: {
+      health: '/api/health',
+      movies: '/api/v1/movies',
+      auth: '/api/v1/auth',
+      wallet: '/api/v1/wallet',
+      payments: '/api/v1/payments',
+      products: '/api/v1/products',
+      podcasts: '/api/v1/podcasts'
+    },
+    message: '🎬 KV Digital Cinema Backend Engine is running smoothly!'
+  });
+});
+
 // Base Health Route
 app.get('/api/health', (req, res) => {
   res.json({
