@@ -1,0 +1,322 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id              String          @id @default(uuid())
+  name            String
+  email           String          @unique
+  password        String?
+  role            String          @default("USER") // USER, MODERATOR, ADMIN, SUPER_ADMIN
+  avatar          String?
+  emailVerified   Boolean         @default(false)
+  rememberToken   String?
+  googleId        String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  wallet          Wallet?
+  transactions    Transaction[]
+  payments        Payment[]
+  orders          Order[]
+  favorites       Favorite[]
+  watchHistories  WatchHistory[]
+  reviews         Review[]
+  supportTickets  SupportTicket[]
+}
+
+model Wallet {
+  id           String        @id @default(uuid())
+  userId       String        @unique
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance      Float         @default(0.0)
+  currency     String        @default("USD")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  transactions Transaction[]
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  walletId      String
+  wallet        Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount        Float
+  balanceBefore Float?
+  balanceAfter  Float?
+  type          String   // DEPOSIT, MOVIE_PURCHASE, MOVIE_RENTAL, REFUND, WITHDRAW, ECOMMERCE, ADMIN_ADJUSTMENT
+  status        String   @default("COMPLETED") // PENDING, COMPLETED, FAILED, REFUNDED
+  reference     String?
+  description   String?
+  createdAt     DateTime @default(now())
+}
+
+model Payment {
+  id                    String    @id @default(uuid())
+  orderId               String?
+  order                 Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount                Float
+  currency              String    @default("USD")
+  paymentMethod         String    // ABA_PAYWAY, BAKONG_KHQR, KHQR, KHQR_CC
+  transactionId         String    @unique // merchant_transaction_id
+  merchantTransactionId String?   @unique
+  pwTranId              String?   // pw_tran_id from ABA
+  traceId               String?   // trace_id from ABA
+  qrData                String?
+  rawResponse           String?
+  md5Sig                String?
+  qrCode                String?
+  paymentUrl            String?
+  status                String    @default("PENDING") // PENDING, PROCESSING, PAID, FAILED, EXPIRED, CANCELLED
+  bakongReference       String?
+  verificationAttempts  Int       @default(0)
+  lastCheckedAt         DateTime?
+  paidAt                DateTime?
+  processedAt           DateTime?
+  expiresAt             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @default(now()) @updatedAt
+
+  @@index([status])
+  @@index([userId])
+  @@index([orderId])
+  @@index([createdAt])
+  @@index([transactionId])
+  @@index([bakongReference])
+}
+
+model Category {
+  id          String          @id @default(uuid())
+  name        String          @unique
+  slug        String          @unique
+  description String?
+  icon        String?
+  movies      MovieCategory[]
+  createdAt   DateTime        @default(now())
+}
+
+model Genre {
+  id        String       @id @default(uuid())
+  name      String       @unique
+  slug      String       @unique
+  movies    MovieGenre[]
+  createdAt DateTime     @default(now())
+}
+
+model Movie {
+  id          String          @id @default(uuid())
+  title       String
+  slug        String          @unique
+  description String
+  poster      String
+  banner      String
+  trailerUrl  String
+  videoUrl    String
+  isPremium   Boolean         @default(false)
+  price       Float           @default(0.0)
+  rentalPrice Float           @default(0.0)
+  rating      Float           @default(0.0)
+  duration    Int             @default(0)
+  releaseYear Int
+  director    String
+  cast        String
+  country     String          @default("USA")
+  language    String          @default("English")
+  viewCount   Int             @default(0)
+  isFeatured  Boolean         @default(false)
+  isTrending  Boolean         @default(false)
+  status      String          @default("PUBLISHED")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  genres      MovieGenre[]
+  categories  MovieCategory[]
+  episodes    Episode[]
+  orders      Order[]
+  favorites   Favorite[]
+  histories   WatchHistory[]
+  reviews     Review[]
+}
+
+model MovieGenre {
+  movieId String
+  movie   Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  genreId String
+  genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, genreId])
+}
+
+model MovieCategory {
+  movieId    String
+  movie      Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, categoryId])
+}
+
+model Episode {
+  id            String         @id @default(uuid())
+  movieId       String
+  movie         Movie          @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  seasonNumber  Int            @default(1)
+  episodeNumber Int
+  title         String
+  description   String?
+  videoUrl      String
+  duration      Int            @default(0)
+  thumbnail     String?
+  createdAt     DateTime       @default(now())
+  histories     WatchHistory[]
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movieId     String?
+  movie       Movie?      @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  totalAmount Float       @default(0.0)
+  price       Float       @default(0.0)
+  currency    String      @default("USD")
+  type        String      @default("LIFETIME") // LIFETIME, RENTAL, SUBSCRIPTION, TOPUP, ECOMMERCE
+  expiresAt   DateTime?
+  status      String      @default("PENDING") // PENDING, COMPLETED, FAILED, CANCELLED
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @default(now()) @updatedAt
+
+  payments    Payment[]
+  orderItems  OrderItem[]
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  description String
+  price       Float
+  stock       Int         @default(100)
+  image       String
+  status      String      @default("ACTIVE") // ACTIVE, INACTIVE
+  category    String      @default("Electronics")
+  rating      Float       @default(4.8)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @default(now()) @updatedAt
+
+  orderItems  OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  price     Float
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movieId   String
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, movieId])
+}
+
+model WatchHistory {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movieId         String
+  movie           Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  episodeId       String?
+  episode         Episode? @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  progressSeconds Int      @default(0)
+  durationSeconds Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, movieId, episodeId])
+}
+
+model Podcast {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  audioUrl    String
+  videoUrl    String?
+  coverImage  String
+  duration    Int      @default(0)
+  category    String   @default("General")
+  price       Float    @default(0.0)
+  isPremium   Boolean  @default(false)
+  likesCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movieId   String
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String
+  status    String   @default("APPROVED")
+  createdAt DateTime @default(now())
+}
+
+model Coupon {
+  id          String    @id @default(uuid())
+  code        String    @unique
+  type        String    @default("PERCENTAGE")
+  value       Float
+  minSpend    Float     @default(0.0)
+  maxDiscount Float?
+  usageLimit  Int       @default(100)
+  usedCount   Int       @default(0)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model Banner {
+  id        String   @id @default(uuid())
+  title     String
+  imageUrl  String
+  linkUrl   String?
+  position  Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model SupportTicket {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   String
+  status    String   @default("OPEN")
+  priority  String   @default("MEDIUM")
+  messages  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Setting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
