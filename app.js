@@ -43,7 +43,7 @@ app.use('/api', apiLimiter);
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
-    app: 'KV Digital Cinema API Server',
+    app: 'KravanDC.com API Server',
     version: '1.0.0',
     health: '/api/health',
     endpoints: {
@@ -55,7 +55,7 @@ app.get('/', (req, res) => {
       products: '/api/v1/products',
       podcasts: '/api/v1/podcasts'
     },
-    message: '🎬 KV Digital Cinema Backend Engine is running smoothly!'
+    message: '🎬 KravanDC.com Backend Engine is running smoothly!'
   });
 });
 

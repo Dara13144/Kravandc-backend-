@@ -37,7 +37,7 @@ const paymentCheckWorker = require('./services/paymentCheckWorker');
 server.listen(PORT, () => {
   console.log(`
   ======================================================
-   🎬 KV DIGITAL CINEMA BACKEND SERVER RUNNING 🎬
+   🎬 KRAVANDC.COM BACKEND API SERVER RUNNING 🎬
   ======================================================
    - URL: http://localhost:${PORT}
    - Environment: ${process.env.NODE_ENV || 'development'}
