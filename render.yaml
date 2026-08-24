@@ -11,7 +11,17 @@ services:
       - key: PORT
         value: 10000
       - key: DATABASE_URL
-        value: file:./dev.db
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: SUPABASE_URL
+        value: https://irdgcydgnsocsgybivvm.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: sb_publishable_LeDxSyVdk75T5ybYRxoK9Q_j_X8YJSQ
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: kv-media
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
