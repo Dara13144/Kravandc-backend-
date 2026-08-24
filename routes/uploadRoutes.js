@@ -52,8 +52,10 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
+const { isSupabaseConfigured, uploadToSupabaseStorage } = require('../services/supabaseClient');
+
 // Single File / Video Upload Route: POST /api/v1/upload & POST /api/v1/upload/video
-const handleUpload = (req, res) => {
+const handleUpload = async (req, res) => {
   try {
     const file = req.file || (req.files && req.files[0]);
     if (!file) {
@@ -64,10 +66,30 @@ const handleUpload = (req, res) => {
     const protocol = req.protocol;
     const isVideo = file.mimetype.startsWith('video/') || ['.mp4', '.webm', '.mkv', '.mov', '.m4v', '.avi'].includes(path.extname(file.filename).toLowerCase());
 
-    const fileUrl = `${protocol}://${host}/uploads/${file.filename}`;
-    const relativeUrl = `/uploads/${file.filename}`;
+    let fileUrl = `${protocol}://${host}/uploads/${file.filename}`;
+    let relativeUrl = `/uploads/${file.filename}`;
+    let storageProvider = 'local';
 
-    console.log(`[Media Upload] Uploaded ${isVideo ? 'VIDEO' : 'MEDIA'}: ${file.filename} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
+    // If Supabase Storage is configured and enabled via SUPABASE_STORAGE_BUCKET
+    const bucket = process.env.SUPABASE_STORAGE_BUCKET;
+    if (isSupabaseConfigured() && bucket) {
+      try {
+        const fileBuffer = fs.readFileSync(file.path);
+        const targetPath = `${isVideo ? 'videos' : 'media'}/${file.filename}`;
+        const uploadResult = await uploadToSupabaseStorage(bucket, targetPath, fileBuffer, file.mimetype);
+
+        if (uploadResult.success && uploadResult.publicUrl) {
+          fileUrl = uploadResult.publicUrl;
+          relativeUrl = uploadResult.publicUrl;
+          storageProvider = 'supabase';
+          console.log(`[Supabase Upload] Successfully stored in bucket "${bucket}": ${uploadResult.publicUrl}`);
+        }
+      } catch (storageErr) {
+        console.warn('[Supabase Storage Warning] Falling back to local storage:', storageErr.message);
+      }
+    }
+
+    console.log(`[Media Upload] Uploaded ${isVideo ? 'VIDEO' : 'MEDIA'}: ${file.filename} (${(file.size / (1024 * 1024)).toFixed(2)} MB) via ${storageProvider}`);
 
     return sendSuccess(res, isVideo ? 'Video uploaded successfully' : 'Media uploaded successfully', {
       url: fileUrl,
@@ -77,7 +99,8 @@ const handleUpload = (req, res) => {
       size: file.size,
       sizeFormatted: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
       mimetype: file.mimetype,
-      isVideo: isVideo
+      isVideo: isVideo,
+      storage: storageProvider
     });
   } catch (err) {
     console.error('[Upload Error]', err.message);

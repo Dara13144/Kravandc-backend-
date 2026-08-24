@@ -5,14 +5,17 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "prisma generate && prisma db push && node prisma/seed.js",
+    "build": "prisma generate",
     "dev": "nodemon -e js,mjs,cjs,json,env server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "db:seed": "node prisma/seed.js"
+    "db:push": "prisma db push",
+    "db:seed": "node prisma/seed.js",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
     "@prisma/client": "^5.10.2",
+    "@supabase/supabase-js": "^2.112.4",
     "axios": "^1.6.7",
     "bakong-khqr": "^1.0.20",
     "bcryptjs": "^2.4.3",

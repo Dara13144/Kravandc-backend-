@@ -5,3 +5,6 @@ uploads/*
 dist
 logs
 *.log
+*.db
+*.db-journal
+dev.db
