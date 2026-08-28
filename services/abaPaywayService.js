@@ -1,7 +1,6 @@
 const crypto = require('crypto');
 const axios = require('axios');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../utils/prisma');
 const { PayWayClient, paywayClient } = require('./paywayClient');
 
 /**

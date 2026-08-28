@@ -1,13 +1,6 @@
 const { createHmac } = require('crypto');
 const axios = require('axios');
-const { PrismaClient } = require('@prisma/client');
-
-let prisma;
-try {
-  prisma = new PrismaClient();
-} catch (e) {
-  prisma = null;
-}
+const prisma = require('../utils/prisma');
 
 /**
  * Trim helper for string inputs

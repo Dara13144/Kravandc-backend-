@@ -1,6 +1,5 @@
 const { sendError } = require('../utils/response');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../utils/prisma');
 
 const authorizeRoles = (...allowedRoles) => {
   return async (req, res, next) => {

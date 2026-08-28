@@ -17,9 +17,17 @@ services:
       - key: SUPABASE_URL
         value: https://irdgcydgnsocsgybivvm.supabase.co
       - key: SUPABASE_ANON_KEY
-        value: sb_publishable_LeDxSyVdk75T5ybYRxoK9Q_j_X8YJSQ
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SUPABASE_JWKS_URL
+        value: https://irdgcydgnsocsgybivvm.supabase.co/auth/v1/.well-known/jwks.json
       - key: SUPABASE_STORAGE_BUCKET
         value: kv-media
       - key: JWT_SECRET
