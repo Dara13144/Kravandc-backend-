@@ -1,66 +1,25 @@
 services:
   - type: web
-    name: kv-digital-cinema-backend
-    runtime: node
+    name: kravandc-backend
+    env: node
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    region: singapore
+    buildCommand: npm install && npx prisma generate
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
       - key: DATABASE_URL
-        sync: false
+        value: postgresql://postgres.irdgcydgnsocsgybivvm:Kv1234567892453345@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true
       - key: DIRECT_URL
-        sync: false
-      - key: SUPABASE_URL
-        value: https://irdgcydgnsocsgybivvm.supabase.co
-      - key: SUPABASE_ANON_KEY
-        sync: false
-      - key: SUPABASE_PUBLISHABLE_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: SUPABASE_SECRET_KEY
-        sync: false
-      - key: SUPABASE_JWT_SECRET
-        sync: false
-      - key: SUPABASE_JWKS_URL
-        value: https://irdgcydgnsocsgybivvm.supabase.co/auth/v1/.well-known/jwks.json
-      - key: SUPABASE_STORAGE_BUCKET
-        value: kv-media
+        value: postgresql://postgres.irdgcydgnsocsgybivvm:Kv1234567892453345@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
       - key: JWT_SECRET
-        generateValue: true
+        value: kv_digital_cinema_super_secret_jwt_key_2026
       - key: JWT_REFRESH_SECRET
-        generateValue: true
-      - key: JWT_EXPIRES_IN
-        value: 7d
-      - key: JWT_REFRESH_EXPIRES_IN
-        value: 30d
+        value: kv_digital_cinema_refresh_secret_key_2026
       - key: FRONTEND_URL
-        sync: false
-      - key: ABA_PAYWAY_API_URL
-        value: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase
-      - key: ABA_PAYWAY_MERCHANT_ID
-        value: ec477410
-      - key: ABA_PAYWAY_API_KEY
-        value: 80cb36f0ebc28ba5f33eef0f030404bdf13e0ac2
-      - key: ABA_PAYWAY_SECRET
-        value: 80cb36f0ebc28ba5f33eef0f030404bdf13e0ac2
-      - key: BAKONG_API_URL
-        value: https://api-bakong.nbc.gov.kh/v1
-      - key: BAKONG_BEARER_TOKEN
-        value: rbkcHfsm5XrVlb1CXFYHiudZDEyK3gIDUM-WwL9GNzfUpg
-      - key: BAKONG_ACCOUNT_ID
-        value: thy_seng1@bkrt
-      - key: BAKONG_MERCHANT_NAME
-        value: KV Digital Cinema
-      - key: CUTLUY_API_KEY
-        value: ck_live_R4T5n4RvJg2FziFWKy1RdjfY_dJCbBAD
-      - key: CUTLUY_API_URL
-        value: https://cutluy.com/v1/payments
-      - key: CUTLUY_ACCOUNT_ID
-        value: abaakhppxxx@abaa
-      - key: CUTLUY_MERCHANT_NAME
-        value: KV Digital Cinema
+        value: https://kravandc.vercel.app
