@@ -6,12 +6,16 @@ RUN apk add --no-cache openssl libc6-compat
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+COPY prisma ./prisma/
+
+RUN npm install --omit=dev
+RUN npx prisma generate
 
 COPY . .
 
-RUN npx prisma generate
+ENV PORT=10000
+ENV NODE_ENV=production
 
-EXPOSE 5000 5050 10000
+EXPOSE 10000
 
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
