@@ -62,17 +62,50 @@ io.on('connection', (socket) => {
 
 const paymentCheckWorker = require('./services/paymentCheckWorker');
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`
   ======================================================
    🎬 KRAVANDC.COM BACKEND API SERVER RUNNING 🎬
   ======================================================
-   - URL: http://localhost:${PORT}
+   - URL: http://0.0.0.0:${PORT}
    - Environment: ${process.env.NODE_ENV || 'development'}
-   - Health Check: http://localhost:${PORT}/api/health
+   - Health Check: http://0.0.0.0:${PORT}/api/health
   ======================================================
   `);
 
   // Start background payment status checking worker
-  paymentCheckWorker.start();
+  try {
+    paymentCheckWorker.start();
+  } catch (err) {
+    console.warn('[Payment Worker Warning]:', err.message);
+  }
+});
+
+// Graceful Cloud Shutdown Handlers (Render, Railway, Docker, Kubernetes)
+const handleGracefulShutdown = (signal) => {
+  console.log(`[Server] Received ${signal}. Gracefully closing HTTP and WebSocket connections...`);
+  try {
+    paymentCheckWorker.stop();
+  } catch (e) {}
+
+  server.close(() => {
+    console.log('[Server] Closed HTTP & WebSocket server cleanly.');
+    process.exit(0);
+  });
+
+  setTimeout(() => {
+    console.error('[Server] Forced shutdown after timeout.');
+    process.exit(0);
+  }, 5000);
+};
+
+process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Process Unhandled Rejection]:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[Process Uncaught Exception]:', err);
 });
