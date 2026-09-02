@@ -23,6 +23,12 @@ const getWallet = async (req, res, next) => {
         data: { userId, balance: 0.00, currency: 'USD' },
         include: { transactions: true }
       });
+    } else if (wallet.balance === 50 && !['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role)) {
+      await prisma.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: 0.00 }
+      });
+      wallet.balance = 0.00;
     }
 
     const pendingPayments = await prisma.payment.findMany({

@@ -105,6 +105,14 @@ const login = async (req, res, next) => {
       return sendError(res, 'Invalid credentials');
     }
 
+    if (user.wallet && user.wallet.balance === 50 && !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+      await prisma.wallet.update({
+        where: { id: user.wallet.id },
+        data: { balance: 0.00 }
+      });
+      user.wallet.balance = 0.00;
+    }
+
     const vipOrder = await prisma.order.findFirst({
       where: {
         userId: user.id,
@@ -218,6 +226,12 @@ const googleLogin = async (req, res, next) => {
           }
         });
         user.wallet = newWallet;
+      } else if (user.wallet.balance === 50 && !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+        await prisma.wallet.update({
+          where: { id: user.wallet.id },
+          data: { balance: 0.00 }
+        });
+        user.wallet.balance = 0.00;
       }
     }
 
@@ -297,6 +311,14 @@ const getProfile = async (req, res, next) => {
     });
 
     if (!user) return sendError(res, 'User not found', null, 404);
+
+    if (user.wallet && user.wallet.balance === 50 && !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+      await prisma.wallet.update({
+        where: { id: user.wallet.id },
+        data: { balance: 0.00 }
+      });
+      user.wallet.balance = 0.00;
+    }
 
     const vipOrder = await prisma.order.findFirst({
       where: {
