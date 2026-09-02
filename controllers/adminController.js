@@ -209,6 +209,62 @@ const deleteMovie = async (req, res, next) => {
 };
 
 /**
+ * Manage Podcasts (Admin)
+ */
+const createPodcast = async (req, res, next) => {
+  try {
+    const { title, description, audioUrl, videoUrl, coverImage, host, duration, category, episodeNumber, isPremium, price } = req.body;
+    const podcast = await prisma.podcast.create({
+      data: {
+        title,
+        description,
+        audioUrl,
+        videoUrl,
+        coverImage,
+        host,
+        duration: duration ? parseInt(duration) : 0,
+        category,
+        episodeNumber: episodeNumber ? parseInt(episodeNumber) : 1,
+        isPremium: Boolean(isPremium),
+        price: price ? parseFloat(price) : 0.0
+      }
+    });
+    return sendSuccess(res, 'Podcast created successfully', podcast, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updatePodcast = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updateData = { ...req.body };
+    if (updateData.duration) updateData.duration = parseInt(updateData.duration);
+    if (updateData.episodeNumber) updateData.episodeNumber = parseInt(updateData.episodeNumber);
+    if (updateData.price !== undefined) updateData.price = parseFloat(updateData.price);
+    const podcast = await prisma.podcast.update({
+      where: { id },
+      data: updateData
+    });
+    return sendSuccess(res, 'Podcast updated successfully', podcast);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const deletePodcast = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await prisma.podcast.delete({
+      where: { id }
+    });
+    return sendSuccess(res, 'Podcast deleted successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Manage Users & Wallet Adjustments (Admin)
  */
 const getUsers = async (req, res, next) => {
@@ -403,52 +459,6 @@ const updatePaymentStatus = async (req, res, next) => {
     }
 
     return sendSuccess(res, `Payment status updated to ${status}`);
-  } catch (err) {
-    next(err);
-  }
-};
-
-const createPodcast = async (req, res, next) => {
-  try {
-    const { title, description, audioUrl, videoUrl, coverImage, duration, category, price, isPremium } = req.body;
-    const podcast = await prisma.podcast.create({
-      data: {
-        title,
-        description,
-        audioUrl: audioUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        videoUrl: videoUrl || null,
-        coverImage: coverImage || 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=600',
-        duration: parseInt(duration || 1800),
-        category: category || 'Interviews',
-        price: parseFloat(price || 0),
-        isPremium: Boolean(isPremium)
-      }
-    });
-    return sendSuccess(res, 'Podcast created successfully', podcast, 201);
-  } catch (err) {
-    next(err);
-  }
-};
-
-const updatePodcast = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { title, description, audioUrl, videoUrl, coverImage, duration, category, price, isPremium } = req.body;
-    const updated = await prisma.podcast.update({
-      where: { id },
-      data: {
-        ...(title && { title }),
-        ...(description && { description }),
-        ...(audioUrl && { audioUrl }),
-        ...(videoUrl !== undefined && { videoUrl }),
-        ...(coverImage && { coverImage }),
-        ...(duration !== undefined && { duration: parseInt(duration) }),
-        ...(category && { category }),
-        ...(price !== undefined && { price: parseFloat(price) }),
-        ...(isPremium !== undefined && { isPremium: Boolean(isPremium) })
-      }
-    });
-    return sendSuccess(res, 'Podcast updated successfully', updated);
   } catch (err) {
     next(err);
   }

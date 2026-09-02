@@ -467,6 +467,13 @@ const getMovieReviews = async (req, res, next) => {
       },
       orderBy: { createdAt: 'desc' }
     });
+
+    return sendSuccess(res, 'Reviews retrieved', reviews);
+  } catch (err) {
+    next(err);
+  }
+};
+
 /**
  * Update Video Logo / Watermark directly (Single Movie or Global All Movies)
  */
