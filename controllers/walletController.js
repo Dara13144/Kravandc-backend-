@@ -20,7 +20,7 @@ const getWallet = async (req, res, next) => {
 
     if (!wallet) {
       wallet = await prisma.wallet.create({
-        data: { userId, balance: 50.00, currency: 'USD' },
+        data: { userId, balance: 0.00, currency: 'USD' },
         include: { transactions: true }
       });
     }

@@ -189,7 +189,7 @@ const googleLogin = async (req, res, next) => {
           emailVerified: true,
           wallet: {
             create: {
-              balance: 50.00, // Welcome bonus
+              balance: 0.00,
               currency: 'USD'
             }
           }
