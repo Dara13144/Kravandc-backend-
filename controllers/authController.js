@@ -144,14 +144,37 @@ const login = async (req, res, next) => {
  */
 const googleLogin = async (req, res, next) => {
   try {
-    const { googleId, email, name, avatar } = req.body;
+    let { googleId, email, name, avatar, credential } = req.body;
+
+    // If a Google JWT credential was provided from Google One Tap / GIS
+    if (credential && (!email || !googleId)) {
+      try {
+        const parts = credential.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+          if (payload.email) email = payload.email;
+          if (payload.sub) googleId = payload.sub;
+          if (payload.name) name = payload.name;
+          if (payload.picture) avatar = payload.picture;
+        }
+      } catch (decodeErr) {
+        console.warn('[Google Auth] Failed to parse credential payload:', decodeErr.message);
+      }
+    }
 
     if (!email) {
       return sendError(res, 'Google account email is required');
     }
 
-    let user = await prisma.user.findUnique({
-      where: { email },
+    const cleanEmail = email.trim().toLowerCase();
+
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: cleanEmail },
+          { email: email.trim() }
+        ]
+      },
       include: { wallet: true }
     });
 
@@ -159,8 +182,8 @@ const googleLogin = async (req, res, next) => {
       // Create new user via Google Register
       user = await prisma.user.create({
         data: {
-          name: name || 'Google User',
-          email,
+          name: name || email.split('@')[0] || 'Google User',
+          email: cleanEmail,
           googleId: googleId || `google_${Date.now()}`,
           avatar: avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
           emailVerified: true,
@@ -173,14 +196,43 @@ const googleLogin = async (req, res, next) => {
         },
         include: { wallet: true }
       });
-    } else if (!user.googleId && googleId) {
-      // Link existing user account with Google ID
+    } else {
+      // Update existing user with Google ID and avatar if needed
+      const updateData = { emailVerified: true };
+      if (!user.googleId && googleId) updateData.googleId = googleId;
+      if (!user.avatar && avatar) updateData.avatar = avatar;
+
       user = await prisma.user.update({
         where: { id: user.id },
-        data: { googleId, emailVerified: true },
+        data: updateData,
         include: { wallet: true }
       });
+
+      // Ensure user has a wallet
+      if (!user.wallet) {
+        const newWallet = await prisma.wallet.create({
+          data: {
+            userId: user.id,
+            balance: 0.00,
+            currency: 'USD'
+          }
+        });
+        user.wallet = newWallet;
+      }
     }
+
+    const vipOrder = await prisma.order.findFirst({
+      where: {
+        userId: user.id,
+        type: 'ALL_ACCESS_VIP',
+        status: 'COMPLETED',
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } }
+        ]
+      }
+    });
+    const hasVipPass = Boolean(vipOrder || ['ADMIN', 'SUPER_ADMIN'].includes(user.role));
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
@@ -192,7 +244,9 @@ const googleLogin = async (req, res, next) => {
         email: user.email,
         role: user.role,
         avatar: user.avatar,
-        balance: user.wallet?.balance || 0
+        balance: user.wallet?.balance || 0,
+        hasVipPass,
+        emailVerified: user.emailVerified
       },
       accessToken,
       refreshToken

@@ -123,6 +123,7 @@ model Movie {
   banner      String
   trailerUrl  String
   videoUrl    String
+  videoLogo   String?
   isPremium   Boolean         @default(false)
   price       Float           @default(0.0)
   rentalPrice Float           @default(0.0)
@@ -259,6 +260,7 @@ model Podcast {
   description String
   audioUrl    String
   videoUrl    String?
+  videoLogo   String?
   coverImage  String
   duration    Int      @default(0)
   category    String   @default("General")

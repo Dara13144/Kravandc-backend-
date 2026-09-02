@@ -20,5 +20,7 @@ router.get('/users/transactions/:userId', adminController.getUserTransactions);
 router.post('/users/role', adminController.updateUserRole);
 router.get('/payments', adminController.getPayments);
 router.put('/payments/status', adminController.updatePaymentStatus);
+router.get('/settings', adminController.getSettings);
+router.post('/settings', adminController.updateSetting);
 
 module.exports = router;

@@ -63,7 +63,7 @@ app.get('/', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
-    app: 'KV Digital Cinema API',
+    app: 'Kravan DC API',
     timestamp: new Date().toISOString()
   });
 });
@@ -86,12 +86,29 @@ app.use('/api/v1/movies', movieRoutes);
 app.use('/api/v1/wallet', walletRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/payment', paymentRoutes);
 app.use('/api/v1/orders', orderRoutes);
 app.use('/api/v1/podcasts', podcastRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/upload', uploadRoutes);
+
+// Public Settings & Branding endpoint
+const prisma = require('./utils/prisma');
+app.get(['/api/v1/settings', '/api/settings'], async (req, res) => {
+  try {
+    const settings = await prisma.setting.findMany();
+    const settingsMap = {};
+    settings.forEach((s) => {
+      settingsMap[s.key] = s.value;
+    });
+    res.json({
+      success: true,
+      data: settingsMap
+    });
+  } catch (err) {
+    res.json({ success: true, data: {} });
+  }
+});
 
 // Global Error Handler
 app.use(errorHandler);

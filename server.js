@@ -27,7 +27,35 @@ io.on('connection', (socket) => {
     console.log(`[Socket.io] Socket ${socket.id} joined room user_${userId}`);
   });
 
+  // Movie Stream / Page Room with Live Concurrent Viewers
+  socket.on('watch_movie', (movieId) => {
+    if (!movieId) return;
+    const roomName = `movie_${movieId}`;
+    socket.join(roomName);
+    socket.currentMovieRoom = roomName;
+    socket.currentMovieId = movieId;
+
+    const liveCount = io.sockets.adapter.rooms.get(roomName)?.size || 1;
+    console.log(`[Socket.io] User watching ${roomName} (Active Viewers: ${liveCount})`);
+    io.to(roomName).emit('live_viewers_update', { movieId, liveViewers: liveCount });
+  });
+
+  socket.on('leave_movie', (movieId) => {
+    if (!movieId) return;
+    const roomName = `movie_${movieId}`;
+    socket.leave(roomName);
+    const liveCount = io.sockets.adapter.rooms.get(roomName)?.size || 0;
+    io.to(roomName).emit('live_viewers_update', { movieId, liveViewers: liveCount });
+  });
+
   socket.on('disconnect', () => {
+    if (socket.currentMovieRoom) {
+      const liveCount = io.sockets.adapter.rooms.get(socket.currentMovieRoom)?.size || 0;
+      io.to(socket.currentMovieRoom).emit('live_viewers_update', {
+        movieId: socket.currentMovieId,
+        liveViewers: liveCount
+      });
+    }
     console.log(`[Socket.io] Client disconnected: ${socket.id}`);
   });
 });

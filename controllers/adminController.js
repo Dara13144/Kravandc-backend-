@@ -85,6 +85,7 @@ const createMovie = async (req, res, next) => {
       banner,
       trailerUrl,
       videoUrl,
+      videoLogo,
       isPremium,
       price,
       rentalPrice,
@@ -112,6 +113,7 @@ const createMovie = async (req, res, next) => {
         banner: banner || '/assets/banners/default.jpg',
         trailerUrl: trailerUrl || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         videoUrl: videoUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        videoLogo: videoLogo || '/logo.png',
         isPremium: Boolean(isPremium),
         price: parseFloat(price || 0),
         rentalPrice: parseFloat(rentalPrice || 0),
@@ -162,6 +164,7 @@ const updateMovie = async (req, res, next) => {
       banner,
       trailerUrl,
       videoUrl,
+      videoLogo,
       isPremium,
       price,
       rentalPrice,
@@ -179,6 +182,7 @@ const updateMovie = async (req, res, next) => {
         ...(banner && { banner }),
         ...(trailerUrl !== undefined && { trailerUrl }),
         ...(videoUrl !== undefined && { videoUrl }),
+        ...(videoLogo !== undefined && { videoLogo }),
         ...(isPremium !== undefined && { isPremium: Boolean(isPremium) }),
         ...(price !== undefined && { price: parseFloat(price) }),
         ...(rentalPrice !== undefined && { rentalPrice: parseFloat(rentalPrice) }),
@@ -450,11 +454,31 @@ const updatePodcast = async (req, res, next) => {
   }
 };
 
-const deletePodcast = async (req, res, next) => {
+const getSettings = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    await prisma.podcast.delete({ where: { id } });
-    return sendSuccess(res, 'Podcast deleted successfully');
+    const settings = await prisma.setting.findMany();
+    const settingsMap = {};
+    settings.forEach((s) => {
+      settingsMap[s.key] = s.value;
+    });
+    return sendSuccess(res, 'Settings retrieved successfully', settingsMap);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateSetting = async (req, res, next) => {
+  try {
+    const { key, value, description } = req.body;
+    if (!key || value === undefined) {
+      return sendError(res, 'Setting key and value are required', null, 400);
+    }
+    const setting = await prisma.setting.upsert({
+      where: { key },
+      update: { value: String(value), description },
+      create: { key, value: String(value), description }
+    });
+    return sendSuccess(res, `Setting "${key}" updated successfully`, setting);
   } catch (err) {
     next(err);
   }
@@ -473,5 +497,7 @@ module.exports = {
   getUserTransactions,
   updateUserRole,
   getPayments,
-  updatePaymentStatus
+  updatePaymentStatus,
+  getSettings,
+  updateSetting
 };

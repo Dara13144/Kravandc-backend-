@@ -16,7 +16,7 @@ class KHQRCCService {
     this.profileId = process.env.KHQR_CC_PROFILE_ID || '7vIqOqeFgnciB2X6yuv7fiTN1lUDVFx1';
     this.secretKey = process.env.KHQR_CC_SECRET_KEY || 'A84xD9P4H3QXKitlxcC9UDZiUrj2y83Q';
     this.accountId = process.env.BAKONG_ACCOUNT_ID || process.env.KHQR_CC_ACCOUNT_ID || 'thy_seng1@bkrt';
-    this.merchantName = process.env.BAKONG_MERCHANT_NAME || process.env.KHQR_MERCHANT_NAME || 'KV Digital Cinema';
+    this.merchantName = process.env.BAKONG_MERCHANT_NAME || process.env.KHQR_MERCHANT_NAME || 'Kravan DC';
     this.merchantCity = process.env.BAKONG_MERCHANT_CITY || process.env.KHQR_MERCHANT_CITY || 'Phnom Penh';
     this.qrApiUrl = process.env.KHQR_CC_API_URL || `https://khqr.cc/api/${this.profileId}/payment-gateway/v1/payments/qr-api`;
     this.checkoutGatewayUrl = process.env.KHQR_CC_CHECKOUT_URL || 'https://khqr.cc/api/payment/request';

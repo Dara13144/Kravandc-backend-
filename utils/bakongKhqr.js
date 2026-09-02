@@ -67,7 +67,7 @@ function decodeKHQR(qrString) {
  */
 function generateBakongKHQRString({
   accountId = process.env.BAKONG_ACCOUNT_ID || process.env.KHQR_ACCOUNT_ID || process.env.KHQR_CC_ACCOUNT_ID || 'dara_mao1@bkrt',
-  merchantName = process.env.BAKONG_MERCHANT_NAME || process.env.KHQR_MERCHANT_NAME || 'KV Digital Cinema',
+  merchantName = process.env.BAKONG_MERCHANT_NAME || process.env.KHQR_MERCHANT_NAME || 'Kravan DC',
   merchantCity = process.env.BAKONG_MERCHANT_CITY || process.env.KHQR_MERCHANT_CITY || 'Phnom Penh',
   amount = 0.01,
   currency = process.env.BAKONG_CURRENCY || 'USD',

@@ -116,7 +116,7 @@ class CutLuyService {
         status: payData.status || 'pending',
         expiresAt: expiresAt,
         expiresInSeconds: Math.max(30, Math.floor((expiresAt.getTime() - Date.now()) / 1000)),
-        merchantName: process.env.CUTLUY_MERCHANT_NAME || 'KV Digital Cinema'
+        merchantName: process.env.CUTLUY_MERCHANT_NAME || 'Kravandc.com'
       };
     } catch (err) {
       console.error('[CutLuy Create Payment Error]', err.response?.data || err.message);

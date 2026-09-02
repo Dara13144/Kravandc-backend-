@@ -139,7 +139,7 @@ const getMovies = async (req, res, next) => {
  */
 const getHomeContent = async (req, res, next) => {
   try {
-    const [featured, trending, popular, topRated, latest, categories] = await Promise.all([
+    const [featuredRaw, trendingRaw, popularRaw, topRatedRaw, latestRaw, categories, banners] = await Promise.all([
       prisma.movie.findMany({
         where: { isFeatured: true, status: 'PUBLISHED' },
         include: { genres: { include: { genre: true } } },
@@ -170,21 +170,32 @@ const getHomeContent = async (req, res, next) => {
       }),
       prisma.category.findMany({
         include: { _count: { select: { movies: true } } }
+      }),
+      prisma.banner.findMany({
+        where: { isActive: true },
+        orderBy: { position: 'asc' }
       })
     ]);
 
     const formatMovie = (m) => ({
       ...m,
-      genres: m.genres.map(g => g.genre.name)
+      genres: m.genres ? m.genres.map(g => g.genre?.name || g.name || g) : []
     });
 
+    const latest = latestRaw.map(formatMovie);
+    const featured = (featuredRaw.length > 0 ? featuredRaw.map(formatMovie) : latest).slice(0, 5);
+    const trending = (trendingRaw.length > 0 ? trendingRaw.map(formatMovie) : latest).slice(0, 10);
+    const popular = (popularRaw.length > 0 ? popularRaw.map(formatMovie) : latest).slice(0, 10);
+    const topRated = (topRatedRaw.length > 0 ? topRatedRaw.map(formatMovie) : latest).slice(0, 10);
+
     return sendSuccess(res, 'Home content retrieved', {
-      featured: featured.map(formatMovie),
-      trending: trending.map(formatMovie),
-      popular: popular.map(formatMovie),
-      topRated: topRated.map(formatMovie),
-      latest: latest.map(formatMovie),
-      categories
+      featured,
+      trending,
+      popular,
+      topRated,
+      latest,
+      categories,
+      banners
     });
   } catch (err) {
     next(err);
@@ -228,7 +239,25 @@ const getMovieBySlug = async (req, res, next) => {
     let isFavorite = false;
 
     if (req.user) {
-      if (movie.isPremium) {
+      // Check for VIP All Access Pass
+      const vipOrder = await prisma.order.findFirst({
+        where: {
+          userId: req.user.id,
+          type: 'ALL_ACCESS_VIP',
+          status: 'COMPLETED',
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: new Date() } }
+          ]
+        }
+      });
+
+      if (vipOrder || ['ADMIN', 'SUPER_ADMIN'].includes(req.user.role)) {
+        hasVipPass = true;
+        hasAccess = true;
+      }
+
+      if (movie.isPremium && !hasAccess) {
         // Check for single movie purchase or rental
         const movieOrder = await prisma.order.findFirst({
           where: {
@@ -411,7 +440,80 @@ const addReview = async (req, res, next) => {
       data: { rating: parseFloat(avgRating.toFixed(1)) }
     });
 
+    // Emit real-time comment to movie room
+    if (global.io) {
+      global.io.to(`movie_${movieId}`).emit('new_comment', review);
+    }
+
     return sendSuccess(res, 'Review submitted successfully', review, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Get All Reviews & Comments for Movie
+ */
+const getMovieReviews = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const reviews = await prisma.review.findMany({
+      where: {
+        OR: [{ movieId: id }, { movie: { slug: id } }],
+        status: 'APPROVED'
+      },
+      include: {
+        user: { select: { id: true, name: true, avatar: true, email: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+/**
+ * Update Video Logo / Watermark directly (Single Movie or Global All Movies)
+ */
+const updateVideoLogo = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { videoLogo, updateAll = false } = req.body;
+
+    if (!videoLogo) {
+      return sendError(res, 'Video logo image/URL is required');
+    }
+
+    if (!id || id === 'undefined' || id === 'null' || id === 'all' || updateAll) {
+      await prisma.movie.updateMany({
+        data: { videoLogo }
+      });
+      if (global.io) {
+        global.io.emit('video_logo_updated', { videoLogo });
+      }
+      return sendSuccess(res, 'Video logo updated across all movies', { videoLogo });
+    }
+
+    const movie = await prisma.movie.findFirst({
+      where: { OR: [{ id }, { slug: id }] }
+    });
+
+    if (!movie) {
+      await prisma.movie.updateMany({
+        data: { videoLogo }
+      });
+      if (global.io) {
+        global.io.emit('video_logo_updated', { videoLogo });
+      }
+      return sendSuccess(res, 'Video logo updated across all movies', { videoLogo });
+    }
+
+    const updated = await prisma.movie.update({
+      where: { id: movie.id },
+      data: { videoLogo }
+    });
+
+    if (global.io) {
+      global.io.to(`movie_${movie.id}`).emit('video_logo_updated', { movieId: movie.id, videoLogo });
+      global.io.emit('video_logo_updated', { movieId: movie.id, videoLogo });
+    }
+
+    return sendSuccess(res, 'Video logo updated successfully', updated);
   } catch (err) {
     next(err);
   }
@@ -424,5 +526,7 @@ module.exports = {
   toggleFavorite,
   getUserFavorites,
   saveWatchProgress,
-  addReview
+  addReview,
+  getMovieReviews,
+  updateVideoLogo
 };
